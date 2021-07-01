@@ -28,6 +28,7 @@ dependencies:
 - diagrams-lib
 - diagrams-svg
 - SVGFonts
+- force-layout
 
 default-extensions:
   - EmptyCase

@@ -2,6 +2,7 @@
 
 module Lib where
 
+import Control.Arrow
 import           Data.Function (on)
 import           Data.Graph.Inductive (Gr, match)
 import qualified Data.Graph.Inductive as G
@@ -20,6 +21,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (join)
 import Data.Typeable
 import Control.Arrow (first)
+import Physics.ForceLayout
+import Data.Maybe (maybeToList)
 
 
 lin2' = unsafePerformIO lin2
@@ -79,31 +82,71 @@ points = map p2 [ (0, 12), (12, 16), (24, 12), (24, 21), (36, 16), (48, 12)
                 , (48, 21), (12, 0), (7, 7), (24, 4), (36, 0), (46, 0)]
 
 
+data Component a = Component
+  { c_node :: Node
+  , c_rank :: Int
+  , c_label :: String
+  , c_edges :: [Node]
+  , c_pos :: Point V2 a
+  }
+  deriving stock Functor
+
+drawTheD :: Component a -> (Point V2 a, Diagram B)
+drawTheD c = (c_pos c, (stateLabel (c_label c) <> state) # named (c_node c))
+
 mkD
-    :: ( Floating n
-       , Ord n
-       , Typeable n
-       , RealFloat n
-       , Renderable (Path V2 n) b
-       , Read n
-       )
-    => (v -> String)
+    :: (v -> String)
     -> Gr v e
     -> [[Node]]
-    -> [(Point V2 Int, QDiagram b V2 n Any)]
+    -> [Component Int]
 mkD sho g ranked = do
   (rank, ns) <- zip [0..] ranked
   (y, n) <- zip [0..] ns
   case match n g of
     (Just (_, _, v, es), _) ->
       -- TODO(sandy): stupid diagrams, upside down y coord
-      pure (P $ V2 rank (-y), (stateLabel (sho v) <> state) # named n)
+      pure (Component n rank (sho v) (fmap snd es) $ P $ V2 rank (-y))
     _ -> mempty
+
+componentEdges :: Component a -> [(Node, Node)]
+componentEdges c = fmap ((c_node c), ) $ c_edges c
 
 
 ds = mkD id graph $ ranksOf $ rank graph
 
-states = position $ fmap (first $ fmap (fromIntegral . (* 20))) ds
+pairsOf :: [a] -> [(a, a)]
+pairsOf cs = do
+  (p1 : ps) <- tails $ cs
+  p2 <- ps
+  pure (p1, p2)
+
+e :: Floating a => [Component a] -> Ensemble V2 a
+e cs = Ensemble
+  [ (componentEdges =<< cs, hookeForce 0.05 40)
+  , (allPairs, coulombForce 3)
+  ] particleMap
+  where
+    allPairs    = do
+      (p1 : ps) <- tails $ cs
+      p2 <- ps
+      pure (c_node p1, c_node p2)
+    particleMap = M.fromList $ do
+      c <- cs
+      pure (c_node c, initParticle $ c_pos c)
+
+unassemble :: Map Node (Component a) -> Ensemble V2 a -> [Component a]
+unassemble m e = do
+  (n, p) <- M.assocs $ _particles e
+  c <- maybeToList $ M.lookup n m
+  pure $ c { c_pos = _pos p }
+
+float :: (Floating a, Ord a) => [Component a] -> [Component a]
+float cs =
+  let m = M.fromList $ fmap (c_node &&& id) cs
+   in unassemble m $ forceLayout def  $ e cs
+
+
+states = position $ fmap drawTheD $ float $ fmap (fmap (fromIntegral . (* 20))) ds
 
 shaft  = arc xDir (-1/6 @@ turn)
 shaft' = arc xDir (-2.7/5 @@ turn)
@@ -133,5 +176,5 @@ example = appEndo (edgify graph) states
 
 
 main :: IO ()
-main = renderSVG "/tmp/yo.svg" (dims (V2 @Float 500 500)) example
+main = renderSVG "/tmp/yo.svg" (dims (V2 @Double 500 500)) example
 
