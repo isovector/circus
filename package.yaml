@@ -21,6 +21,61 @@ description:         Please see the README on GitHub at <https://github.com/isov
 
 dependencies:
 - base >= 4.7 && < 5
+- monoidal-containers
+- fgl
+- containers
+- diagrams
+- diagrams-lib
+- diagrams-svg
+- SVGFonts
+
+default-extensions:
+  - EmptyCase
+  - PostfixOperators
+  - TupleSections
+  - NamedFieldPuns
+  - BangPatterns
+  - BinaryLiterals
+  - HexFloatLiterals
+  - NumericUnderscores
+  - GADTSyntax
+  - RankNTypes
+  - TypeApplications
+  - PolyKinds
+  - ExistentialQuantification
+  - TypeOperators
+  - ConstraintKinds
+  - ExplicitForAll
+  - KindSignatures
+  - NamedWildCards
+  - ScopedTypeVariables
+  - FlexibleContexts
+  - FlexibleInstances
+  - MultiParamTypeClasses
+  - ConstrainedClassMethods
+  - InstanceSigs
+  - TypeSynonymInstances
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveTraversable
+  - StandaloneDeriving
+  - EmptyDataDeriving
+  - DeriveLift
+  - GeneralisedNewtypeDeriving
+  - DeriveGeneric
+  - DerivingStrategies
+  - DerivingVia
+  - NumDecimals
+  - ViewPatterns
+  - PatternSynonyms
+  - TypeFamilies
+  - DeriveAnyClass
+  - NoStarIsType
+  - DataKinds
+  - DefaultSignatures
+  - TypeApplications
+  - LambdaCase
 
 library:
   source-dirs: src
