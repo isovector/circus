@@ -21,14 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/isov
 
 dependencies:
 - base >= 4.7 && < 5
-- monoidal-containers
-- fgl
 - containers
-- diagrams
-- diagrams-lib
-- diagrams-svg
-- SVGFonts
-- force-layout
+- aeson
+- text
 
 default-extensions:
   - EmptyCase
