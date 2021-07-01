@@ -59,6 +59,7 @@ data Cell = Cell
   { -- | The symbol to use when drawing this cell.
     cellType :: CellType
   , cellParameters :: Map Parameter Int
+  , cellAttributes :: Map Text Value
     -- | Which ports are inputs and outputs.
   , cellPortDirections :: Map PortName Direction
     -- | What are the ports connected to? Each port may connect to several
@@ -126,14 +127,14 @@ pattern CellNand :: CellType
 pattern CellNand = CellGeneric "$nand"
 pattern CellOr = CellGeneric "$or"
 
-pattern CellReduceNor :: CellType
-pattern CellReduceNor = CellGeneric "$nor"
+pattern CellNor :: CellType
+pattern CellNor = CellGeneric "$nor"
 
-pattern CellReduceXor :: CellType
-pattern CellReduceXor = CellGeneric "$xor"
+pattern CellXor :: CellType
+pattern CellXor = CellGeneric "$xor"
 
-pattern CellReduceNxor :: CellType
-pattern CellReduceNxor = CellGeneric "$xnor"
+pattern CellXnor :: CellType
+pattern CellXnor = CellGeneric "$xnor"
 
 pattern CellNot :: CellType
 pattern CellNot = CellGeneric "$not"
@@ -141,16 +142,16 @@ pattern CellNot = CellGeneric "$not"
 pattern CellAdd :: CellType
 pattern CellAdd = CellGeneric "$add"
 
-pattern CellDff :: CellType
 pattern CellEq :: CellType
-
 pattern CellEq = CellGeneric "$eq"
-pattern CellLt :: CellType
 
+pattern CellDff :: CellType
 pattern CellDff = CellGeneric "dff"
-pattern CellDffn :: CellType
 
+pattern CellDffn :: CellType
 pattern CellDffn = CellGeneric "dffn-bus"
+
+pattern CellLt :: CellType
 pattern CellLt = CellGeneric "$lt"
 
 pattern CellGe :: CellType
@@ -160,10 +161,16 @@ pattern CellInputExt :: CellType
 pattern CellInputExt = CellGeneric "$_inputExt_"
 
 pattern CellJoin :: CellType
-pattern CellOutputExt :: CellType
-
-pattern CellOutputExt = CellGeneric "$_outputExt_"
 pattern CellJoin = CellGeneric "$_join_"
+
+pattern CellSplit :: CellType
+pattern CellSplit = CellGeneric "$_split_"
+
+pattern CellOutputExt :: CellType
+pattern CellOutputExt = CellGeneric "$_outputExt_"
+
+pattern CellConstant :: CellType
+pattern CellConstant = CellGeneric "$_constant_"
 
 -- TODO(sandy): use real port names
 
@@ -207,6 +214,48 @@ $(deriveJSON
  )
 
 
+mkMonoidalBinaryOp :: CellType -> PortName -> PortName -> PortName -> [Bit] -> [Bit] -> Bit -> Cell
+mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
+  Cell
+    cell
+    (M.fromList
+      [ (Width in1p, length in1)
+      , (Width in2p, length in2)
+      , (Width outp, 1)
+      ])
+    mempty
+    (M.fromList
+      [ (in1p, Input)
+      , (in2p, Input)
+      , (outp, Output)
+      ])
+    (M.fromList
+      [ (in1p, in1)
+      , (in2p, in2)
+      , (outp, [out])
+      ])
+
+mkAnd = mkMonoidalBinaryOp CellAnd "A" "B" "C"
+mkOr = mkMonoidalBinaryOp CellOr "A" "B" "C"
+mkXor = mkMonoidalBinaryOp CellXor "A" "B" "C"
+
+mkConstant :: String -> [Bit] -> Cell
+mkConstant str out =
+  Cell
+  CellConstant
+    (M.fromList
+      [ (Width "Y", length out )
+      ]
+    )
+    (M.singleton "output" "hey")
+    (M.fromList
+      [ ("Y", Output)
+      ])
+    (M.fromList
+      [ ("Y", out)
+      ])
+
+
 mkTestCell :: CellType -> Bit -> Bit -> Bit -> Cell
 mkTestCell ty in1 in2 out =
   Cell
@@ -216,6 +265,7 @@ mkTestCell ty in1 in2 out =
       , (Width "B", 1)
       , (Width "X", 1)
       ])
+    mempty
     (M.fromList
       [ ("A", Input)
       , ("B", Input)
@@ -240,11 +290,13 @@ schema = Schema $ M.fromList
         (M.fromList
           [ ("c1" , mkTestCell (CellGeneric "hmm") 0 0 3)
           , ("c2" , mkTestCell CellAnd 0 1 4)
-          , ("c3" , mkTestCell CellOr 3 4 2)
+          , ("c3" , mkTestCell CellOr 3 4 5)
+          , ("c4" , mkTestCell CellAnd 5 6 2)
+          , ("const" , mkConstant "hello" [6])
           ])
     )
   ]
 
-blah :: String
-blah = read $ show $ encode schema
+main :: IO ()
+main = writeFile "/tmp/test.json" $ read $ show $ encode schema
 
