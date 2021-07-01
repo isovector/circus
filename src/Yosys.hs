@@ -30,6 +30,15 @@ data Module = Module
   , moduleCells :: Map CellName Cell
   }
 
+instance Semigroup Module where
+  (<>) (Module p1 c1) (Module p2 c2) = Module
+    { modulePorts = p1 <> p2
+    , moduleCells = c1 <> c2
+    }
+
+instance Monoid Module where
+  mempty = Module {modulePorts = mempty, moduleCells = mempty}
+
 newtype ModuleName = ModuleName { getModuleName :: Text }
   deriving newtype (Eq, Ord, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
 
@@ -256,47 +265,47 @@ mkConstant str out =
       ])
 
 
-mkTestCell :: CellType -> Bit -> Bit -> Bit -> Cell
-mkTestCell ty in1 in2 out =
-  Cell
-    ty
-    (M.fromList
-      [ (Width "A", 2)
-      , (Width "B", 1)
-      , (Width "X", 1)
-      ])
-    mempty
-    (M.fromList
-      [ ("A", Input)
-      , ("B", Input)
-      , ("Y", Output)
-      ])
-    (M.fromList
-      [ ("A", [in1, in1])
-      , ("B", [in2])
-      , ("Y", [out])
-      ])
+-- mkTestCell :: CellType -> Bit -> Bit -> Bit -> Cell
+-- mkTestCell ty in1 in2 out =
+--   Cell
+--     ty
+--     (M.fromList
+--       [ (Width "A", 2)
+--       , (Width "B", 1)
+--       , (Width "X", 1)
+--       ])
+--     mempty
+--     (M.fromList
+--       [ ("A", Input)
+--       , ("B", Input)
+--       , ("Y", Output)
+--       ])
+--     (M.fromList
+--       [ ("A", [in1, in1])
+--       , ("B", [in2])
+--       , ("Y", [out])
+--       ])
 
-schema :: Schema
-schema = Schema $ M.fromList
-  [ ( "test"
-    , Module
-        (M.fromList
-          [ ("in1", Port Input [0])
-          , ("in2", Port Input [1])
-          , ("out", Port Output [2])
-          ]
-        )
-        (M.fromList
-          [ ("c1" , mkTestCell (CellGeneric "hmm") 0 0 3)
-          , ("c2" , mkTestCell CellAnd 0 1 4)
-          , ("c3" , mkTestCell CellOr 3 4 5)
-          , ("c4" , mkTestCell CellAnd 5 6 2)
-          , ("const" , mkConstant "hello" [6])
-          ])
-    )
-  ]
+-- schema :: Schema
+-- schema = Schema $ M.fromList
+--   [ ( "test"
+--     , Module
+--         (M.fromList
+--           [ ("in1", Port Input [0])
+--           , ("in2", Port Input [1])
+--           , ("out", Port Output [2])
+--           ]
+--         )
+--         (M.fromList
+--           [ ("c1" , mkTestCell (CellGeneric "hmm") 0 0 3)
+--           , ("c2" , mkTestCell CellAnd 0 1 4)
+--           , ("c3" , mkTestCell CellOr 3 4 5)
+--           , ("c4" , mkTestCell CellAnd 5 6 2)
+--           , ("const" , mkConstant "hello" [6])
+--           ])
+--     )
+--   ]
 
-main :: IO ()
-main = writeFile "/tmp/test.json" $ read $ show $ encode schema
+-- main :: IO ()
+-- main = writeFile "/tmp/test.json" $ read $ show $ encode schema
 
