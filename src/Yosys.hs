@@ -16,12 +16,17 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 
+------------------------------------------------------------------------------
+-- | A collection of modules.
 data Schema = Schema
   { schemaModules :: Map ModuleName Module
   }
 
+
 data Module = Module
-  { modulePorts :: Map PortName Port
+  { -- | Inputs and outputs
+    modulePorts :: Map PortName Port
+    -- | Components
   , moduleCells :: Map CellName Cell
   }
 
@@ -36,24 +41,37 @@ newtype CellName = CellName { getCellName :: Text }
 
 
 data Port = Port
-  { portDirection :: Direction
+  { -- | Whether this port is an input or an output
+    portDirection :: Direction
+    -- | The individual wires connected to this port. They are numbered in the
+    -- same order they are described here.
   , portBits :: [Bit]
   }
 
+------------------------------------------------------------------------------
+-- | A single wire. Bits are defined implicitly by a unique ID. Every component
+-- that references the bit will be connected with a common node.
 newtype Bit = Bit { getBit :: Int }
   deriving newtype (Num, ToJSON, FromJSON)
 
 
 data Cell = Cell
-  { cellType :: CellType
+  { -- | The symbol to use when drawing this cell.
+    cellType :: CellType
   , cellParameters :: Map Parameter Int
+    -- | Which ports are inputs and outputs.
   , cellPortDirections :: Map PortName Direction
+    -- | What are the ports connected to? Each port may connect to several
+    -- bits, but make sure you set the 'Width' cell 'Parameter' if this is the
+    -- case.
   , cellConnections :: Map PortName [Bit]
   }
 
 
 data Parameter
-  = Width PortName
+  = -- | How many bits wide is the given 'Port'?
+    Width PortName
+    -- | Is the given 'Port' signed?
   | Signed PortName
   deriving stock (Eq, Ord, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -83,7 +101,12 @@ instance FromJSON Direction where
     _ -> empty
 
 
+------------------------------------------------------------------------------
+-- | Master list of cells, and their associated names is available here:
+--
+-- https://raw.githubusercontent.com/nturley/netlistsvg/master/lib/default.svg?sanitize=true
 data CellType = CellGeneric Text
+
 
 pattern CellMux :: CellType
 pattern CellMux = CellGeneric "$mux"
@@ -224,7 +247,4 @@ schema = Schema $ M.fromList
 
 blah :: String
 blah = read $ show $ encode schema
-
-
-
 
