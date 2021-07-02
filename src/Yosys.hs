@@ -8,6 +8,7 @@ import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Aeson.Types (toJSONKeyText)
 import           Data.Char
+import           Data.Data (Data)
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.String (IsString)
@@ -21,6 +22,7 @@ import           GHC.Generics (Generic)
 data Schema = Schema
   { schemaModules :: Map ModuleName Module
   }
+  deriving stock (Eq, Show, Data)
 
 
 data Module = Module
@@ -29,6 +31,7 @@ data Module = Module
     -- | Components
   , moduleCells :: Map CellName Cell
   }
+  deriving stock (Eq, Show, Data)
 
 instance Semigroup Module where
   (<>) (Module p1 c1) (Module p2 c2) = Module
@@ -40,13 +43,17 @@ instance Monoid Module where
   mempty = Module {modulePorts = mempty, moduleCells = mempty}
 
 newtype ModuleName = ModuleName { getModuleName :: Text }
-  deriving newtype (Eq, Ord, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
+  deriving stock (Data)
+  deriving newtype (Eq, Ord, Show, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
 
 newtype PortName = PortName { getPortName :: Text }
-  deriving newtype (Eq, Ord, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
+  deriving stock (Data)
+  deriving newtype (Eq, Ord, Show, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
 
 newtype CellName = CellName { getCellName :: Text }
-  deriving newtype (Eq, Ord, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
+  deriving stock (Data)
+  deriving newtype (Eq, Ord, Show, IsString, ToJSONKey, FromJSONKey, FromJSON, ToJSON)
+
 
 
 data Port = Port
@@ -56,11 +63,13 @@ data Port = Port
     -- same order they are described here.
   , portBits :: [Bit]
   }
+  deriving stock (Eq, Show, Data)
 
 ------------------------------------------------------------------------------
 -- | A single wire. Bits are defined implicitly by a unique ID. Every component
 -- that references the bit will be connected with a common node.
 newtype Bit = Bit { getBit :: Int }
+  deriving stock (Eq, Ord, Show, Data)
   deriving newtype (Num, ToJSON, FromJSON)
 
 
@@ -76,6 +85,7 @@ data Cell = Cell
     -- case.
   , cellConnections :: Map PortName [Bit]
   }
+  deriving stock (Eq, Show, Data)
 
 
 data Parameter
@@ -83,7 +93,7 @@ data Parameter
     Width PortName
     -- | Is the given 'Port' signed?
   | Signed PortName
-  deriving stock (Eq, Ord, Generic)
+  deriving stock (Eq, Ord, Show, Generic, Data)
   deriving anyclass (FromJSON, ToJSON)
 
 instance ToJSONKey Parameter where
@@ -99,6 +109,7 @@ instance FromJSONKey Parameter where
 data Direction
   = Input
   | Output
+  deriving stock (Eq, Ord, Show, Read, Enum, Bounded, Data)
 
 instance ToJSON Direction where
   toJSON Input = String "input"
@@ -116,6 +127,7 @@ instance FromJSON Direction where
 --
 -- https://raw.githubusercontent.com/nturley/netlistsvg/master/lib/default.svg?sanitize=true
 data CellType = CellGeneric Text
+  deriving stock (Eq, Ord, Show, Data)
 
 
 pattern CellMux :: CellType
@@ -223,14 +235,14 @@ $(deriveJSON
  )
 
 
-mkMonoidalBinaryOp :: CellType -> PortName -> PortName -> PortName -> [Bit] -> [Bit] -> Bit -> Cell
+mkMonoidalBinaryOp :: CellType -> PortName -> PortName -> PortName -> [Bit] -> [Bit] -> [Bit] -> Cell
 mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
   Cell
     cell
     (M.fromList
       [ (Width in1p, length in1)
       , (Width in2p, length in2)
-      , (Width outp, 1)
+      , (Width outp, length out)
       ])
     mempty
     (M.fromList
@@ -241,7 +253,7 @@ mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
     (M.fromList
       [ (in1p, in1)
       , (in2p, in2)
-      , (outp, [out])
+      , (outp, out)
       ])
 
 mkAnd = mkMonoidalBinaryOp CellAnd "A" "B" "C"
@@ -263,6 +275,16 @@ mkConstant str out =
     (M.fromList
       [ ("Y", out)
       ])
+
+renderModule :: Module -> IO ()
+renderModule
+  = writeFile "/tmp/test.json"
+  . read
+  . show
+  . encode
+  . Schema
+  . M.singleton "module"
+
 
 
 -- mkTestCell :: CellType -> Bit -> Bit -> Bit -> Cell
