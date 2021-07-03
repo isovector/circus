@@ -4,13 +4,18 @@
 module Yosys where
 
 import           Control.Applicative (empty)
+import           Control.Arrow
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Aeson.Types (toJSONKeyText)
 import           Data.Char
 import           Data.Data (Data)
+import           Data.List
 import           Data.Map (Map)
 import qualified Data.Map as M
+import           Data.Maybe
+import           Data.Set (Set)
+import qualified Data.Set as S
 import           Data.String (IsString)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -286,48 +291,53 @@ renderModule
   . M.singleton "module"
 
 
+------------------------------------------------------------------------------
+-- | Gather sets of input and output ports for the given cell.
+cellPorts :: Cell -> (Set PortName, Set PortName)
+cellPorts c =
+  let ports = M.assocs $ cellPortDirections c
+      (ip, op) = fmap fst *** fmap fst $ partition ((== Input) . snd) ports
+   in (S.fromList ip, S.fromList op)
 
--- mkTestCell :: CellType -> Bit -> Bit -> Bit -> Cell
--- mkTestCell ty in1 in2 out =
---   Cell
---     ty
---     (M.fromList
---       [ (Width "A", 2)
---       , (Width "B", 1)
---       , (Width "X", 1)
---       ])
---     mempty
---     (M.fromList
---       [ ("A", Input)
---       , ("B", Input)
---       , ("Y", Output)
---       ])
---     (M.fromList
---       [ ("A", [in1, in1])
---       , ("B", [in2])
---       , ("Y", [out])
---       ])
 
--- schema :: Schema
--- schema = Schema $ M.fromList
---   [ ( "test"
---     , Module
---         (M.fromList
---           [ ("in1", Port Input [0])
---           , ("in2", Port Input [1])
---           , ("out", Port Output [2])
---           ]
---         )
---         (M.fromList
---           [ ("c1" , mkTestCell (CellGeneric "hmm") 0 0 3)
---           , ("c2" , mkTestCell CellAnd 0 1 4)
---           , ("c3" , mkTestCell CellOr 3 4 5)
---           , ("c4" , mkTestCell CellAnd 5 6 2)
---           , ("const" , mkConstant "hello" [6])
---           ])
---     )
---   ]
+------------------------------------------------------------------------------
+-- | Gather input and output bits for the given cell.
+ioBits :: Module -> (Set Bit, Set Bit)
+ioBits m = flip foldMap (moduleCells m) $ \c ->
+  let (ip, op) = cellPorts c
+      ib = foldMap (fromMaybe [] . flip M.lookup (cellConnections c)) $ ip
+      ob = foldMap (fromMaybe [] . flip M.lookup (cellConnections c)) $ op
+      mod_ports = fmap (portDirection &&& portBits) $ M.elems $ modulePorts m
+      (iports, oports) = (snd =<<) *** (snd =<<) $ partition ((== Input) . fst) mod_ports
+   in (S.fromList $ ib <> oports, S.fromList $ ob <> iports)
 
--- main :: IO ()
--- main = writeFile "/tmp/test.json" $ read $ show $ encode schema
+
+------------------------------------------------------------------------------
+-- | Delete any cells which output only bits in the @to_kill@ set.
+pruneCellsOutput :: Set Bit -> Module -> Module
+pruneCellsOutput to_kill m = m
+  { moduleCells = M.filter (not . should_kill) $ moduleCells m
+  }
+  where
+    should_kill :: Cell -> Bool
+    should_kill c =
+      let (_, op) = cellPorts c
+       in case S.toList op of
+            [pn] ->
+              let bits = fromMaybe [] $ M.lookup pn $ cellConnections c
+               in all (flip S.member to_kill) bits
+            _ -> False
+
+
+------------------------------------------------------------------------------
+-- | Recursively delete cells that output only bits which are unused in the
+-- circuit.
+simplify :: Module -> Module
+simplify m =
+  let (ib, ob) = ioBits m
+      to_kill = ob S.\\ ib
+      m' = pruneCellsOutput to_kill m
+   in case m == m' of
+        True -> m
+        False -> simplify m'
 
