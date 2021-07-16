@@ -65,7 +65,6 @@ library
       NamedFieldPuns
       NamedWildCards
       NumDecimals
-      NumericUnderscores
       PatternSynonyms
       PolyKinds
       PostfixOperators

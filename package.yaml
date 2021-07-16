@@ -58,7 +58,6 @@ default-extensions:
   - NamedFieldPuns
   - NamedWildCards
   - NumDecimals
-  - NumericUnderscores
   - PatternSynonyms
   - PolyKinds
   - PostfixOperators
