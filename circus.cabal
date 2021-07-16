@@ -36,7 +36,6 @@ library
       src
   default-extensions:
       BangPatterns
-      BinaryLiterals
       ConstraintKinds
       DataKinds
       DeriveAnyClass
@@ -44,18 +43,13 @@ library
       DeriveFoldable
       DeriveFunctor
       DeriveGeneric
-      DeriveLift
       DeriveTraversable
       DerivingStrategies
-      EmptyCase
-      EmptyDataDeriving
       ExistentialQuantification
-      ExplicitForAll
       FlexibleContexts
       FlexibleInstances
       GADTSyntax
       GeneralizedNewtypeDeriving
-      InstanceSigs
       LambdaCase
       MultiParamTypeClasses
       PatternSynonyms
