@@ -35,52 +35,48 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      EmptyCase
-      PostfixOperators
-      TupleSections
-      NamedFieldPuns
       BangPatterns
       BinaryLiterals
-      HexFloatLiterals
-      NumericUnderscores
-      GADTSyntax
-      RankNTypes
-      TypeApplications
-      PolyKinds
-      ExistentialQuantification
-      TypeOperators
-      ConstraintKinds
-      ExplicitForAll
-      KindSignatures
-      NamedWildCards
-      ScopedTypeVariables
-      FlexibleContexts
-      FlexibleInstances
-      MultiParamTypeClasses
       ConstrainedClassMethods
-      InstanceSigs
-      TypeSynonymInstances
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
       DeriveDataTypeable
       DeriveFoldable
       DeriveFunctor
-      DeriveTraversable
-      StandaloneDeriving
-      EmptyDataDeriving
-      DeriveLift
-      GeneralisedNewtypeDeriving
       DeriveGeneric
+      DeriveLift
+      DeriveTraversable
       DerivingStrategies
-      DerivingVia
-      NumDecimals
-      ViewPatterns
-      PatternSynonyms
-      TypeFamilies
-      DeriveAnyClass
-      NoStarIsType
-      DataKinds
-      DefaultSignatures
-      TypeApplications
+      EmptyCase
+      EmptyDataDeriving
+      ExistentialQuantification
+      ExplicitForAll
+      FlexibleContexts
+      FlexibleInstances
+      GADTSyntax
+      GeneralisedNewtypeDeriving
+      HexFloatLiterals
+      InstanceSigs
+      KindSignatures
       LambdaCase
+      MultiParamTypeClasses
+      NamedFieldPuns
+      NamedWildCards
+      NumDecimals
+      NumericUnderscores
+      PatternSynonyms
+      PolyKinds
+      PostfixOperators
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeFamilies
+      TypeOperators
+      TypeSynonymInstances
+      ViewPatterns
   ghc-options: -Wall
   build-depends:
       aeson >=1.0.0.0
