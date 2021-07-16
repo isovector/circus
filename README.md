@@ -1,5 +1,7 @@
 # circus
 
+[![Build Status](https://api.travis-ci.org/isovector/circus.svg?branch=master)](https://travis-ci.org/isovector/circus)
+
 ## Dedication
 
 > Like it? Well I don't see why I oughtn't to like it. Does a boy get a chance
