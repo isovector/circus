@@ -1,6 +1,6 @@
 # circus
 
-[![Build Status](https://api.travis-ci.org/isovector/circus.svg?branch=master)](https://travis-ci.org/isovector/circus)
+[![Build Status](https://travis-ci.com/isovector/circus.svg?branch=master)](https://travis-ci.org/isovector/circus)
 
 ## Dedication
 
