@@ -1,14 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module DSL where
+module Circus.DSL where
 
+import           Circus.Types
 import           Control.Monad.State.Class
 import           Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import           GHC.Generics
 import           Generics.SYB hiding (Generic)
-import           Yosys
 
 
 data GraphState = GraphState
@@ -54,6 +54,8 @@ addCell c = do
        }
 
 
+------------------------------------------------------------------------------
+-- | Like 'unifyBits', but works in pure contexts.
 unifyBitsPure :: Data a => Map Bit Bit -> a -> a
 unifyBitsPure rep  = everywhere $ mkT $ \case
   b | Just b' <- M.lookup b rep -> b'

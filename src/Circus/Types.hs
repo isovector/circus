@@ -1,27 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Yosys where
+module Circus.Types where
 
 import           Control.Applicative (empty)
-import           Control.Arrow
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Aeson.Types (toJSONKeyText)
 import           Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Char
 import           Data.Data (Data)
-import           Data.List
 import           Data.Map (Map)
 import qualified Data.Map as M
-import           Data.Maybe
-import           Data.Set (Set)
-import qualified Data.Set as S
 import           Data.String (IsString)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
-import qualified Data.ByteString.Lazy.Char8 as BS
 
 
 ------------------------------------------------------------------------------
@@ -189,8 +184,6 @@ pattern CellGe = CellGeneric "$ge"
 pattern CellConstant :: CellType
 pattern CellConstant = CellGeneric "$_constant_"
 
--- TODO(sandy): use real port names
-
 
 instance ToJSON CellType where
   toJSON (CellGeneric t) = String t
@@ -231,108 +224,36 @@ $(deriveJSON
  )
 
 
-mkMonoidalBinaryOp :: CellType -> PortName -> PortName -> PortName -> [Bit] -> [Bit] -> [Bit] -> Cell
-mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
-  Cell
-    cell
-    (M.fromList
-      [ (Width in1p, length in1)
-      , (Width in2p, length in2)
-      , (Width outp, length out)
-      ])
-    mempty
-    (M.fromList
-      [ (in1p, Input)
-      , (in2p, Input)
-      , (outp, Output)
-      ])
-    (M.fromList
-      [ (in1p, in1)
-      , (in2p, in2)
-      , (outp, out)
-      ])
-
-
 renderModuleBS :: Module -> ByteString
 renderModuleBS
   = encode
   . Schema
   . M.singleton "module"
 
+
 renderModuleString :: Module -> String
 renderModuleString
   = BS.unpack
   . renderModuleBS
-
-renderModule :: Module -> IO ()
-renderModule
-  = writeFile "/tmp/test.json"
-  . read
-  . show
-  . encode
-  . Schema
-  . M.singleton "module"
-
-
-------------------------------------------------------------------------------
--- | Gather sets of input and output ports for the given cell.
-cellPorts :: Cell -> (Set PortName, Set PortName)
-cellPorts c =
-  let ports = M.assocs $ cellPortDirections c
-      (ip, op) = fmap fst *** fmap fst $ partition ((== Input) . snd) ports
-   in (S.fromList ip, S.fromList op)
-
-
-------------------------------------------------------------------------------
--- | Gather input and output bits for the given cell.
-ioBits :: Module -> (Set Bit, Set Bit)
-ioBits m = flip foldMap (moduleCells m) $ \c ->
-  let (ip, op) = cellPorts c
-      ib = foldMap (fromMaybe [] . flip M.lookup (cellConnections c)) $ ip
-      ob = foldMap (fromMaybe [] . flip M.lookup (cellConnections c)) $ op
-      mod_ports = fmap (portDirection &&& portBits) $ M.elems $ modulePorts m
-      (iports, oports) = (snd =<<) *** (snd =<<) $ partition ((== Input) . fst) mod_ports
-   in (S.fromList $ ib <> oports, S.fromList $ ob <> iports)
-
-
-------------------------------------------------------------------------------
--- | Delete any cells which output only bits in the @to_kill@ set.
-pruneCellsOutput :: Set Bit -> Module -> Module
-pruneCellsOutput to_kill m = m
-  { moduleCells = M.filter (not . should_kill) $ moduleCells m
-  }
-  where
-    should_kill :: Cell -> Bool
-    should_kill c =
-      let (_, op) = cellPorts c
-       in case S.toList op of
-            [pn] ->
-              let bits = fromMaybe [] $ M.lookup pn $ cellConnections c
-               in all (flip S.member to_kill) bits
-            _ -> False
-
-
-------------------------------------------------------------------------------
--- | Recursively delete cells that output only bits which are unused in the
--- circuit.
-simplify :: Module -> Module
-simplify m =
-  let (ib, ob) = ioBits m
-      to_kill = ob S.\\ ib
-      m' = pruneCellsOutput to_kill m
-   in case m == m' of
-        True -> m
-        False -> simplify m'
 
 
 ------------------------------------------------------------------------------
 -- | Helper function for constructing 'Cell's.
 mkCell
     :: CellType
+    -> M.Map PortName (Direction, [Bit])
+    -> Cell
+mkCell = flip mkCell' mempty
+
+
+------------------------------------------------------------------------------
+-- | Helper function for constructing 'Cell's with explicit attributes.
+mkCell'
+    :: CellType
     -> M.Map T.Text Value  -- ^ Attributes
     -> M.Map PortName (Direction, [Bit])
     -> Cell
-mkCell ty as m =
+mkCell' ty as m =
   Cell
     ty
     (M.fromList $ fmap (\(pn, bs) -> (Width pn, length bs)) $ M.toList $ fmap snd m)
