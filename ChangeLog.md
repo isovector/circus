@@ -1,3 +1,3 @@
-# Changelog for cirtography
+# Changelog for circus
 
 ## Unreleased changes

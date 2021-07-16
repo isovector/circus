@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           circus
 version:        0.1.0.0
+synopsis:       Types and a small DSL for working with netlistsvg
 description:    Please see the README on GitHub at <https://github.com/isovector/circus#readme>
+category:       Hardware
 homepage:       https://github.com/isovector/circus#readme
 bug-reports:    https://github.com/isovector/circus/issues
 author:         Sandy Maguire
@@ -81,7 +83,7 @@ library
       LambdaCase
   ghc-options: -Wall
   build-depends:
-      aeson
+      aeson >=1.0.0.0
     , base >=4.7 && <5
     , bytestring
     , containers
