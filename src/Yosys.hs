@@ -148,10 +148,10 @@ pattern CellAnd :: CellType
 pattern CellAnd = CellGeneric "$and"
 
 pattern CellOr :: CellType
-pattern CellNand :: CellType
-
-pattern CellNand = CellGeneric "$nand"
 pattern CellOr = CellGeneric "$or"
+
+pattern CellNand :: CellType
+pattern CellNand = CellGeneric "$nand"
 
 pattern CellNor :: CellType
 pattern CellNor = CellGeneric "$nor"
@@ -172,28 +172,16 @@ pattern CellEq :: CellType
 pattern CellEq = CellGeneric "$eq"
 
 pattern CellDff :: CellType
-pattern CellDff = CellGeneric "dff"
+pattern CellDff = CellGeneric "$dff"
 
 pattern CellDffn :: CellType
-pattern CellDffn = CellGeneric "dffn-bus"
+pattern CellDffn = CellGeneric "$dffn-bus"
 
 pattern CellLt :: CellType
 pattern CellLt = CellGeneric "$lt"
 
 pattern CellGe :: CellType
 pattern CellGe = CellGeneric "$ge"
-
-pattern CellInputExt :: CellType
-pattern CellInputExt = CellGeneric "$_inputExt_"
-
-pattern CellJoin :: CellType
-pattern CellJoin = CellGeneric "$_join_"
-
-pattern CellSplit :: CellType
-pattern CellSplit = CellGeneric "$_split_"
-
-pattern CellOutputExt :: CellType
-pattern CellOutputExt = CellGeneric "$_outputExt_"
 
 pattern CellConstant :: CellType
 pattern CellConstant = CellGeneric "$_constant_"
@@ -261,25 +249,6 @@ mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
       , (outp, out)
       ])
 
-mkAnd = mkMonoidalBinaryOp CellAnd "A" "B" "C"
-mkOr = mkMonoidalBinaryOp CellOr "A" "B" "C"
-mkXor = mkMonoidalBinaryOp CellXor "A" "B" "C"
-
-mkConstant :: String -> [Bit] -> Cell
-mkConstant str out =
-  Cell
-  CellConstant
-    (M.fromList
-      [ (Width "Y", length out )
-      ]
-    )
-    (M.singleton "output" "hey")
-    (M.fromList
-      [ ("Y", Output)
-      ])
-    (M.fromList
-      [ ("Y", out)
-      ])
 
 renderModule :: Module -> IO ()
 renderModule
@@ -340,4 +309,20 @@ simplify m =
    in case m == m' of
         True -> m
         False -> simplify m'
+
+
+------------------------------------------------------------------------------
+-- | Helper function for constructing 'Cell's.
+mkCell
+    :: CellType
+    -> M.Map T.Text Value  -- ^ Attributes
+    -> M.Map PortName (Direction, [Bit])
+    -> Cell
+mkCell ty as m =
+  Cell
+    ty
+    (M.fromList $ fmap (\(pn, bs) -> (Width pn, length bs)) $ M.toList $ fmap snd m)
+    as
+    (fmap fst m)
+    (fmap snd m)
 
