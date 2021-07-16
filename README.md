@@ -10,7 +10,7 @@
 
 ## Overview
 
-This package contains types and a little DSL for producing JSON worthy of [https://github.com/nturley/netlistsvg](netlistsvg) --- a fantastic program for drawing circuit diagrams.
+This package contains types and a little DSL for producing JSON worthy of [netlistsvg](https://github.com/nturley/netlistsvg) --- a fantastic program for drawing circuit diagrams.
 
 
 ## Usage
