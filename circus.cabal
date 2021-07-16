@@ -37,10 +37,8 @@ library
   default-extensions:
       BangPatterns
       BinaryLiterals
-      ConstrainedClassMethods
       ConstraintKinds
       DataKinds
-      DefaultSignatures
       DeriveAnyClass
       DeriveDataTypeable
       DeriveFoldable
@@ -56,21 +54,13 @@ library
       FlexibleContexts
       FlexibleInstances
       GADTSyntax
-      GeneralisedNewtypeDeriving
-      HexFloatLiterals
+      GeneralizedNewtypeDeriving
       InstanceSigs
-      KindSignatures
       LambdaCase
       MultiParamTypeClasses
-      NamedFieldPuns
-      NamedWildCards
-      NumDecimals
       PatternSynonyms
-      PolyKinds
-      PostfixOperators
       RankNTypes
       ScopedTypeVariables
-      StandaloneDeriving
       TupleSections
       TypeFamilies
       TypeOperators
