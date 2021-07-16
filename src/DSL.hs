@@ -17,7 +17,23 @@ data GraphState = GraphState
   }
   deriving stock (Generic)
 
+instance Semigroup GraphState where
+  GraphState b1 m1 <> GraphState b2 m2
+    = GraphState
+    { gs_next_port = b1 + b2
+    , gs_module = m1 <> m2
+    }
 
+instance Monoid GraphState where
+  mempty = GraphState
+    { gs_next_port = Bit 0
+    , gs_module = mempty
+    }
+
+
+------------------------------------------------------------------------------
+-- | Synthesize a fresh 'Bit', suitable for connecting 'Cell's
+-- together.
 freshBit :: MonadState GraphState m => m Bit
 freshBit = do
   p <- gets gs_next_port
@@ -26,6 +42,8 @@ freshBit = do
   pure p
 
 
+------------------------------------------------------------------------------
+-- | Add a 'Cell' to the 'Module' under construction.
 addCell :: MonadState GraphState m => Cell -> m ()
 addCell c = do
   uniq <- freshBit
@@ -42,6 +60,13 @@ unifyBitsPure rep  = everywhere $ mkT $ \case
     | otherwise -> b
 
 
+------------------------------------------------------------------------------
+-- | Given a mapping from source 'Bit's to target 'Bit's, replace
+-- all occurences of the source bits in the 'Module' with the target bits.
+--
+-- This function allows you to call 'addCell' as you go, and create
+-- feedback loops later without needing to know about them in
+-- advance.
 unifyBits :: MonadState GraphState m => Map Bit Bit -> m ()
 unifyBits rep =
   modify' $ \gs -> gs

@@ -8,6 +8,7 @@ import           Control.Arrow
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Aeson.Types (toJSONKeyText)
+import           Data.ByteString.Lazy (ByteString)
 import           Data.Char
 import           Data.Data (Data)
 import           Data.List
@@ -20,14 +21,16 @@ import           Data.String (IsString)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
+import qualified Data.ByteString.Lazy.Char8 as BS
 
 
 ------------------------------------------------------------------------------
 -- | A collection of modules.
-data Schema = Schema
+newtype Schema = Schema
   { schemaModules :: Map ModuleName Module
   }
   deriving stock (Eq, Show, Data)
+  deriving newtype (Semigroup, Monoid)
 
 
 data Module = Module
@@ -249,6 +252,17 @@ mkMonoidalBinaryOp cell in1p in2p outp in1 in2 out =
       , (outp, out)
       ])
 
+
+renderModuleBS :: Module -> ByteString
+renderModuleBS
+  = encode
+  . Schema
+  . M.singleton "module"
+
+renderModuleString :: Module -> String
+renderModuleString
+  = BS.unpack
+  . renderModuleBS
 
 renderModule :: Module -> IO ()
 renderModule
